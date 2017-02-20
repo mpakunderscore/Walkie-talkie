@@ -29,4 +29,9 @@ dependencies {
     testCompile 'junit:junit:4.12'
 
     compile 'org.nanohttpd:nanohttpd:2.2.0'
+
+    compile ('io.socket:socket.io-client:0.8.3') {
+        // excluding org.json which is provided by Android
+        exclude group: 'org.json', module: 'json'
+    }
 }

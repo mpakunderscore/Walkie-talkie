@@ -1,4 +1,4 @@
-package qf.radioandroid;
+package qf.radioandroid.network;
 
 import android.os.AsyncTask;
 import android.os.Environment;
@@ -24,7 +24,7 @@ public class Client extends AsyncTask<String, Void, String> {
 
     static String audioUrl = "/audio";
 
-    static void sendAudio() {
+    public static void sendAudio() {
 
         System.out.println(new File(Environment.getExternalStorageDirectory(), audioFile).length());
 
@@ -43,6 +43,8 @@ public class Client extends AsyncTask<String, Void, String> {
 
             File file = new File(Environment.getExternalStorageDirectory(), audioFile);
 
+
+
             HttpClient httpclient = new DefaultHttpClient();
             HttpPost httppost = new HttpPost(url);
             InputStreamEntity reqEntity = new InputStreamEntity(new FileInputStream(file), -1);
@@ -52,6 +54,7 @@ public class Client extends AsyncTask<String, Void, String> {
             HttpResponse response = httpclient.execute(httppost);
             //Do something with response...
 
+            System.out.println(reqEntity.getContentLength());
 
 
             System.out.println(response.getStatusLine());

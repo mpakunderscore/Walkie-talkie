@@ -22,6 +22,7 @@
         <activity android:name="VideoActivity"
             android:label="@string/app_name"
             android:screenOrientation="fullUser"
+            android:icon="@drawable/icon"
             android:configChanges="orientation|screenSize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
