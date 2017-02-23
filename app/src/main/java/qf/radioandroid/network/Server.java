@@ -4,6 +4,7 @@ import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Environment;
 import android.provider.MediaStore;
+//import android.support.test.espresso.core.deps.guava.io.Files;
 import android.widget.VideoView;
 
 import org.apache.http.HttpResponse;
@@ -15,16 +16,21 @@ import org.apache.http.impl.client.DefaultHttpClient;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.nio.channels.FileChannel;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
 import fi.iki.elonen.NanoHTTPD;
 import qf.radioandroid.VideoActivity;
+
+import static android.R.attr.name;
 
 /**
  * Created by pavelkuzmin on 08/01/2017.
@@ -34,35 +40,60 @@ import qf.radioandroid.VideoActivity;
 
 public class Server extends NanoHTTPD {
 
-    VideoActivity video;
+    private VideoActivity videoActivity;
 
-    Server(int port) {
+    public Server(int port, VideoActivity videoActivity) {
         super(port);
-    }
-
-    public Server(int port, VideoActivity video) {
-        super(port);
-        this.video = video;
+        this.videoActivity = videoActivity;
     }
 
     @Override
     public Response serve(IHTTPSession session) {
 
-        Method method = session.getMethod();
-
-        Map<String, String> files = new HashMap<String, String>();
-        try {
-            session.parseBody(files);
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (ResponseException e) {
-            e.printStackTrace();
-        }
-
         Map<String, String> params = session.getParms();
 
-        video.startAudio();
+        try {
+
+            Map<String, String> files = new HashMap<>();
+            session.parseBody(files);
+            Set<String> keys = files.keySet();
+
+            for (String key : keys) {
+
+                String location = files.get(key);
+
+                File tempFile = new File(location);
+
+                System.out.println("tempFile.length(): " + tempFile.length());
+
+                File audio = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).getAbsolutePath()
+                        + "/" + System.currentTimeMillis());
+
+                copy(tempFile, audio);
+
+                videoActivity.startAudio(audio);
+            }
+
+        } catch (IOException | ResponseException e) {
+            e.printStackTrace();
+            return newFixedLengthResponse(Response.Status.OK, NanoHTTPD.MIME_PLAINTEXT, "Error");
+        }
 
         return newFixedLengthResponse(Response.Status.OK, NanoHTTPD.MIME_PLAINTEXT, "Communicator Android");
+    }
+
+    public static void copy(File src, File dst) throws IOException {
+
+        InputStream in = new FileInputStream(src);
+        OutputStream out = new FileOutputStream(dst);
+
+        // Transfer bytes from in to out
+        byte[] buf = new byte[1024];
+        int len;
+        while ((len = in.read(buf)) > 0) {
+            out.write(buf, 0, len);
+        }
+        in.close();
+        out.close();
     }
 }

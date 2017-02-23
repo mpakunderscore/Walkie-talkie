@@ -19,6 +19,10 @@ import android.widget.VideoView;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import qf.radioandroid.network.Client;
 import qf.radioandroid.network.Server;
@@ -39,7 +43,13 @@ public class VideoActivity extends Activity {
 
     private MediaRecorder mediaRecorder;
 
-    VideoView videoView;
+    private MediaPlayer audioPlayer;
+
+    public VideoView videoView;
+
+    List<File> audioPlaylist = new ArrayList<>();
+
+    Timer timer;
 
     boolean recording = false;
 
@@ -70,6 +80,13 @@ public class VideoActivity extends Activity {
 
         Uri video = Uri.parse("android.resource://" + getPackageName() + "/" + R.raw.stay1);
 
+//        audioPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
+//
+//            public void onCompletion(MediaPlayer audioPlayer) {
+//                videoView.setVideoURI(Uri.parse("android.resource://" + getPackageName() + "/" + R.raw.stay1));
+//            }
+//        });
+
         videoView = (VideoView) findViewById(R.id.videoView);
         videoView.setVideoURI(video);
         videoView.setOnPreparedListener(preparedListener);
@@ -86,18 +103,24 @@ public class VideoActivity extends Activity {
 
                     case MotionEvent.ACTION_DOWN:
 
+                        if (audioPlaylist.size() > 0)
+                            break;
+
                         if (!recording) {
                             initMediaRecorder();
                             mediaRecorder.start();
 
-                            videoView.setVideoURI(Uri.parse("android.resource://" + getPackageName() + "/" + R.raw.say));
-//                            videoView.setAlpha(0.9f);
+//                            videoView.setVideoURI(Uri.parse("android.resource://" + getPackageName() + "/" + R.raw.say));
+                            videoView.setAlpha(0.9f);
                             recording = true;
                         }
 
                         break;
 
                     case MotionEvent.ACTION_UP:
+
+                        if (audioPlaylist.size() > 0)
+                            break;
 
                         if (recording) {
 
@@ -111,8 +134,8 @@ public class VideoActivity extends Activity {
 
                             mediaRecorder.release();
 
-                            videoView.setVideoURI(Uri.parse("android.resource://" + getPackageName() + "/" + R.raw.stay1));
-//                            videoView.setAlpha(1.0f);
+//                            videoView.setVideoURI(Uri.parse("android.resource://" + getPackageName() + "/" + R.raw.stay1));
+                            videoView.setAlpha(1.0f);
                             recording = false;
                         }
 
@@ -161,6 +184,15 @@ public class VideoActivity extends Activity {
         @Override
         public void onPrepared(MediaPlayer mediaPlayer) {
 
+            mediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
+
+                @Override
+                public void onCompletion(MediaPlayer mediaPlayer) {
+                    System.out.println("onCompletion");
+                }
+
+            });
+
             try {
 
                 System.out.println("onPrepared");
@@ -171,7 +203,7 @@ public class VideoActivity extends Activity {
                     mediaPlayer = new MediaPlayer();
                 }
 
-                mediaPlayer.setVolume(0f, 0f);
+//                mediaPlayer.setVolume(0f, 0f);
                 mediaPlayer.setLooping(true);
                 mediaPlayer.start();
 
@@ -181,13 +213,62 @@ public class VideoActivity extends Activity {
         }
     };
 
-    void startAudio() {
+    public void startAudio(File audio) throws IOException {
 
-        videoView.setVideoURI(Uri.parse("android.resource://" + getPackageName() + "/" + R.raw.say));
+        audioPlaylist.add(audio);
+
+        if (audioPlaylist.size() == 1) {
+
+//            if (audioPlayer == null || !audioPlayer.isPlaying()) {
+//                System.err.println("SAY");
+//                System.err.println("SAY DONE");
+//            }
+
+            playNext();
+
+            try {
+                videoView.setVideoURI(Uri.parse("android.resource://" + getPackageName() + "/" + R.raw.say));
+            } catch (Exception e) {
+            }
+        }
+
+        System.out.println("audioPlaylist.size(): " + audioPlaylist.size());
+
+        if (audioPlaylist.size() > 10)
+            audioPlaylist = new ArrayList<File>();
     }
 
-    void stopAudio() {
+    private void playNext() {
 
-        videoView.setVideoURI(Uri.parse("android.resource://" + getPackageName() + "/" + R.raw.stay1));
+        System.out.println("playNext(): " + audioPlaylist.get(0));
+
+        timer = new Timer();
+
+        audioPlayer = MediaPlayer.create(this, Uri.parse(audioPlaylist.get(0).getAbsolutePath()));
+        audioPlayer.start();
+
+        timer.schedule(new TimerTask() {
+
+            @Override
+            public void run() {
+
+//                audioPlayer.reset();
+                audioPlaylist.get(0).delete();
+                audioPlaylist.remove(0);
+
+                if (audioPlaylist.size() > 0)
+                    playNext();
+
+                else {
+//                    System.err.println("STAY");
+                    try {
+                        videoView.setVideoURI(Uri.parse("android.resource://" + getPackageName() + "/" + R.raw.stay1));
+                    } catch (Exception e) {
+                    }
+//                    System.err.println("STAY DONE");
+                }
+            }
+
+        }, audioPlayer.getDuration());
     }
 }
