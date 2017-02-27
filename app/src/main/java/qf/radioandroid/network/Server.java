@@ -54,24 +54,35 @@ public class Server extends NanoHTTPD {
 
         try {
 
-            Map<String, String> files = new HashMap<>();
-            session.parseBody(files);
-            Set<String> keys = files.keySet();
+            System.out.println(session.getMethod());
 
-            for (String key : keys) {
+            if (session.getMethod().toString().equals("POST")) {
 
-                String location = files.get(key);
+                Map<String, String> files = new HashMap<>();
+                session.parseBody(files);
+                Set<String> keys = files.keySet();
 
-                File tempFile = new File(location);
+                for (String key : keys) {
 
-                System.out.println("tempFile.length(): " + tempFile.length());
+                    String location = files.get(key);
 
-                File audio = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).getAbsolutePath()
-                        + "/" + System.currentTimeMillis());
+                    File tempFile = new File(location);
 
-                copy(tempFile, audio);
+                    System.out.println("tempFile.length(): " + tempFile.length());
 
-                videoActivity.startAudio(audio);
+                    File audio = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).getAbsolutePath()
+                            + "/" + System.currentTimeMillis());
+
+                    copy(tempFile, audio);
+
+                    videoActivity.startAudio(audio);
+                }
+
+            } else {
+
+                String ip = session.getHeaders().get("http-client-ip");
+                videoActivity.serverIP = ip;
+                System.out.println(ip);
             }
 
         } catch (IOException | ResponseException e) {

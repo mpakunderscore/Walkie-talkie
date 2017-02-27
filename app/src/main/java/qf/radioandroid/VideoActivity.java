@@ -4,8 +4,12 @@ import android.app.Activity;
 import android.media.MediaPlayer;
 import android.media.MediaRecorder;
 import android.net.Uri;
+import android.net.wifi.WifiManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
+import android.support.annotation.RequiresApi;
+import android.text.format.Formatter;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.Window;
@@ -41,6 +45,8 @@ public class VideoActivity extends Activity {
             | View.SYSTEM_UI_FLAG_FULLSCREEN
             | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY;
 
+    public String serverIP;
+
     private MediaRecorder mediaRecorder;
 
     private MediaPlayer audioPlayer;
@@ -69,6 +75,14 @@ public class VideoActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
 
         super.onCreate(savedInstanceState);
+
+        if (serverIP == null) {
+
+            WifiManager wm = (WifiManager) getSystemService(WIFI_SERVICE);
+            String ip = Formatter.formatIpAddress(wm.getConnectionInfo().getIpAddress());
+
+            System.out.println("my ip: " + ip);
+        }
 
         // Go fullscreen
 //        View decorView = getWindow().getDecorView();
@@ -127,7 +141,7 @@ public class VideoActivity extends Activity {
                             try {
 
                                 mediaRecorder.stop();
-                                Client.sendAudio();
+                                Client.sendAudio(serverIP);
 
                             } catch (RuntimeException e) {
                             }
@@ -238,13 +252,17 @@ public class VideoActivity extends Activity {
             audioPlaylist = new ArrayList<File>();
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.M)
     private void playNext() {
 
         System.out.println("playNext(): " + audioPlaylist.get(0));
 
         timer = new Timer();
 
+        float speed = 0.75f;
+
         audioPlayer = MediaPlayer.create(this, Uri.parse(audioPlaylist.get(0).getAbsolutePath()));
+        audioPlayer.setPlaybackParams(audioPlayer.getPlaybackParams().setSpeed(speed));
         audioPlayer.start();
 
         timer.schedule(new TimerTask() {

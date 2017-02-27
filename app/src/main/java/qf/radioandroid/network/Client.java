@@ -29,17 +29,22 @@ public class Client extends AsyncTask<String, Void, String> {
 
     static String audioFile = "audio.3gp";
 
-    static String serverUrl = "http://192.168.1.47:7000";
+    static String serverUrl;
 
-    static String audioUrl = "/audio";
+    public static void sendAudio(String ip) {
 
-    public static void sendAudio() {
+        serverUrl = "http://" + ip + ":7000/audio";
 
         System.out.println(new File(Environment.getExternalStorageDirectory(), audioFile).length());
 
-//        sendFile(serverUrl + audioUrl);
+        new Client().execute(serverUrl);
+    }
 
-        new Client().execute(serverUrl + audioUrl);
+    @Override
+    protected String doInBackground(String... urls) {
+
+        sendFile(urls[0]);
+        return "";
     }
 
     private static void sendFile(String url) {
@@ -51,60 +56,15 @@ public class Client extends AsyncTask<String, Void, String> {
         String filePath = Environment.getExternalStorageDirectory() + "/" + audioFile;
 
         try {
-            send(filePath);
+            send(url, filePath);
         } catch (IOException e) {
             e.printStackTrace();
         }
 
-//        File file = new File(Environment.getExternalStorageDirectory(), audioFile);
-
-
-//        HttpClient httpclient = new DefaultHttpClient();
-//        HttpPost httppost = new HttpPost(url);
-//
-//        try {
-//
-//            MultipartEntity entity = new MultipartEntity();
-//            FileBody bin = new FileBody(new File(FilePath));
-//
-//            httppost.setHeader("Authorization:", "Bearer " + Token);
-//            entity.addPart("activity_type", new StringBody("run"));
-//            entity.addPart("file", bin);
-//            entity.addPart("data_type", new StringBody("GPX"));
-//
-//            httppost.setEntity(entity);
-//
-//            ResponseHandler<String> responseHandler = new BasicResponseHandler();
-//            String responseBody = httpclient.execute(httppost, responseHandler);
-//            Log.i("Kenyan Runner", "Response of file upload: " + responseBody);
-//
-//        } catch (ClientProtocolException e) {
-//            Log.e("Kenyan Runner", e.toString());
-//        } catch (IOException e) {
-//            Log.e("Kenyan Runner", e.toString());
-//        }finally {
-//            httpclient.getConnectionManager().shutdown();
-//        }
-
-//        try {
-//            HttpClient httpclient = new DefaultHttpClient();
-//            HttpPost httppost = new HttpPost(url);
-//            InputStreamEntity reqEntity = new InputStreamEntity(new FileInputStream(file), -1);
-//            reqEntity.setContentType("binary/octet-stream");
-//            reqEntity.setChunked(true); // Client in multiple parts if needed
-//            httppost.setEntity(reqEntity);
-//            HttpResponse response = httpclient.execute(httppost);
-//            //Do something with response...
-//            System.out.println(reqEntity.getContentLength());
-//            System.out.println(response.getStatusLine());
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//        }
-
         System.out.println("sendFile time: " + (System.currentTimeMillis() - time) / 1000);
     }
 
-    private static void send(String selectedFilePath) throws IOException {
+    private static void send(String serverUrl, String selectedFilePath) throws IOException {
 
         int serverResponseCode = 0;
 
@@ -132,7 +92,7 @@ public class Client extends AsyncTask<String, Void, String> {
         final String fileName = parts[parts.length - 1];
 
         FileInputStream fileInputStream = new FileInputStream(selectedFile);
-        URL url = new URL(serverUrl + audioUrl);
+        URL url = new URL(serverUrl);
         connection = (HttpURLConnection) url.openConnection();
         connection.setDoInput(true); //Allow Inputs
         connection.setDoOutput(true); //Allow Outputs
@@ -165,6 +125,7 @@ public class Client extends AsyncTask<String, Void, String> {
 
         //loop repeats till bytesRead = -1, i.e., no bytes are left to read
         while (bytesRead > 0) {
+
             //write the bytes read from inputstream
             dataOutputStream.write(buffer, 0, bufferSize);
             bytesAvailable = fileInputStream.available();
@@ -182,7 +143,6 @@ public class Client extends AsyncTask<String, Void, String> {
 
         //response code of 200 indicates the server status OK
         if (serverResponseCode == 200) {
-
             System.out.println("UPLOAD DONE");
         }
 
@@ -190,13 +150,5 @@ public class Client extends AsyncTask<String, Void, String> {
         fileInputStream.close();
         dataOutputStream.flush();
         dataOutputStream.close();
-    }
-
-    @Override
-    protected String doInBackground(String... urls) {
-
-        sendFile(urls[0]);
-
-        return "";
     }
 }
