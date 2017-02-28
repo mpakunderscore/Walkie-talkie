@@ -92,7 +92,7 @@ public class VideoActivity extends Activity {
 
         setContentView(R.layout.video);
 
-        Uri video = Uri.parse("android.resource://" + getPackageName() + "/" + R.raw.stay1);
+        Uri video = Uri.parse("android.resource://" + getPackageName() + "/" + R.raw.staymp4);
 
 //        audioPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
 //
@@ -133,25 +133,33 @@ public class VideoActivity extends Activity {
 
                     case MotionEvent.ACTION_UP:
 
-                        if (audioPlaylist.size() > 0)
-                            break;
+//                        if (audioPlaylist.size() > 0)
+//                            break;
 
-                        if (recording) {
+                        Timer wait = new Timer();
 
-                            try {
+                        wait.schedule(new TimerTask() {
 
-                                mediaRecorder.stop();
-                                Client.sendAudio(serverIP);
+                            @Override
+                            public void run() {
 
-                            } catch (RuntimeException e) {
+                                if (recording) {
+
+                                    try {
+
+                                        mediaRecorder.stop();
+                                        Client.sendAudio(serverIP);
+
+                                    } catch (RuntimeException e) {
+                                    }
+
+                                    mediaRecorder.release();
+
+                                    videoView.setAlpha(1.0f);
+                                    recording = false;
+                                }
                             }
-
-                            mediaRecorder.release();
-
-//                            videoView.setVideoURI(Uri.parse("android.resource://" + getPackageName() + "/" + R.raw.stay1));
-                            videoView.setAlpha(1.0f);
-                            recording = false;
-                        }
+                        }, 500);
 
                         break;
 
@@ -227,6 +235,7 @@ public class VideoActivity extends Activity {
         }
     };
 
+    @RequiresApi(api = Build.VERSION_CODES.M)
     public void startAudio(File audio) throws IOException {
 
         audioPlaylist.add(audio);
@@ -241,15 +250,15 @@ public class VideoActivity extends Activity {
             playNext();
 
             try {
-                videoView.setVideoURI(Uri.parse("android.resource://" + getPackageName() + "/" + R.raw.say));
+                videoView.setVideoURI(Uri.parse("android.resource://" + getPackageName() + "/" + R.raw.saymp4));
             } catch (Exception e) {
             }
         }
 
         System.out.println("audioPlaylist.size(): " + audioPlaylist.size());
 
-        if (audioPlaylist.size() > 10)
-            audioPlaylist = new ArrayList<File>();
+//        if (audioPlaylist.size() > 10)
+//            audioPlaylist = new ArrayList<File>();
     }
 
     @RequiresApi(api = Build.VERSION_CODES.M)
@@ -259,18 +268,16 @@ public class VideoActivity extends Activity {
 
         timer = new Timer();
 
-        float speed = 0.75f;
+//        float speed = 0.75f;
 
         audioPlayer = MediaPlayer.create(this, Uri.parse(audioPlaylist.get(0).getAbsolutePath()));
-        audioPlayer.setPlaybackParams(audioPlayer.getPlaybackParams().setSpeed(speed));
-        audioPlayer.start();
+//        audioPlayer.setPlaybackParams(audioPlayer.getPlaybackParams().setSpeed(speed));
 
         timer.schedule(new TimerTask() {
 
             @Override
             public void run() {
 
-//                audioPlayer.reset();
                 audioPlaylist.get(0).delete();
                 audioPlaylist.remove(0);
 
@@ -278,15 +285,16 @@ public class VideoActivity extends Activity {
                     playNext();
 
                 else {
-//                    System.err.println("STAY");
+
                     try {
-                        videoView.setVideoURI(Uri.parse("android.resource://" + getPackageName() + "/" + R.raw.stay1));
+                        videoView.setVideoURI(Uri.parse("android.resource://" + getPackageName() + "/" + R.raw.staymp4));
                     } catch (Exception e) {
                     }
-//                    System.err.println("STAY DONE");
                 }
             }
 
         }, audioPlayer.getDuration());
+
+        audioPlayer.start();
     }
 }

@@ -2,9 +2,11 @@ package qf.radioandroid.network;
 
 import android.net.Uri;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Environment;
 import android.provider.MediaStore;
 //import android.support.test.espresso.core.deps.guava.io.Files;
+import android.support.annotation.RequiresApi;
 import android.widget.VideoView;
 
 import org.apache.http.HttpResponse;
@@ -47,6 +49,7 @@ public class Server extends NanoHTTPD {
         this.videoActivity = videoActivity;
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.M)
     @Override
     public Response serve(IHTTPSession session) {
 
@@ -74,6 +77,8 @@ public class Server extends NanoHTTPD {
                             + "/" + System.currentTimeMillis());
 
                     copy(tempFile, audio);
+
+                    System.out.println("NEXT FILE: " + audio.exists());
 
                     videoActivity.startAudio(audio);
                 }
