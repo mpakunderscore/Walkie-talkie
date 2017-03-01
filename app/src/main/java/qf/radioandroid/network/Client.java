@@ -58,7 +58,7 @@ public class Client extends AsyncTask<String, Void, String> {
         try {
             send(url, filePath);
         } catch (IOException e) {
-            e.printStackTrace();
+//            e.printStackTrace();
         }
 
         System.out.println("sendFile time: " + (System.currentTimeMillis() - time) / 1000);

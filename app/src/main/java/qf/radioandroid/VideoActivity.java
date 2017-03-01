@@ -1,6 +1,9 @@
 package qf.radioandroid;
 
 import android.app.Activity;
+import android.app.Notification;
+import android.app.NotificationManager;
+import android.content.Context;
 import android.media.MediaPlayer;
 import android.media.MediaRecorder;
 import android.net.Uri;
@@ -8,11 +11,11 @@ import android.net.wifi.WifiManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
-import android.support.annotation.RequiresApi;
 import android.text.format.Formatter;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.Window;
+import android.widget.Toast;
 import android.widget.VideoView;
 
 //import org.apache.http.HttpResponse;
@@ -81,25 +84,27 @@ public class VideoActivity extends Activity {
             WifiManager wm = (WifiManager) getSystemService(WIFI_SERVICE);
             String ip = Formatter.formatIpAddress(wm.getConnectionInfo().getIpAddress());
 
-            System.out.println("my ip: " + ip);
+            Toast.makeText(getApplicationContext(), ip, Toast.LENGTH_LONG).show();
         }
-
-        // Go fullscreen
-//        View decorView = getWindow().getDecorView();
-//        decorView.setSystemUiVisibility(uiOptions);
 
         requestWindowFeature(Window.FEATURE_NO_TITLE);
 
         setContentView(R.layout.video);
 
-        Uri video = Uri.parse("android.resource://" + getPackageName() + "/" + R.raw.staymp4);
+        initVideoView();
 
-//        audioPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
-//
-//            public void onCompletion(MediaPlayer audioPlayer) {
-//                videoView.setVideoURI(Uri.parse("android.resource://" + getPackageName() + "/" + R.raw.stay1));
-//            }
-//        });
+        Server server = new Server(7000, this);
+        try {
+            server.start();
+            System.out.println("server start");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void initVideoView() {
+
+        Uri video = Uri.parse("android.resource://" + getPackageName() + "/" + R.raw.staymp4);
 
         videoView = (VideoView) findViewById(R.id.videoView);
         videoView.setVideoURI(video);
@@ -124,7 +129,6 @@ public class VideoActivity extends Activity {
                             initMediaRecorder();
                             mediaRecorder.start();
 
-//                            videoView.setVideoURI(Uri.parse("android.resource://" + getPackageName() + "/" + R.raw.say));
                             videoView.setAlpha(0.9f);
                             recording = true;
                         }
@@ -132,9 +136,6 @@ public class VideoActivity extends Activity {
                         break;
 
                     case MotionEvent.ACTION_UP:
-
-//                        if (audioPlaylist.size() > 0)
-//                            break;
 
                         Timer wait = new Timer();
 
@@ -170,20 +171,6 @@ public class VideoActivity extends Activity {
                 return true;
             }
         });
-
-        Server server = new Server(7000, this);
-        try {
-            server.start();
-            System.out.println("server start");
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-//        try {
-//            socketProvider = new SocketProvider();
-//        } catch (URISyntaxException e) {
-//            e.printStackTrace();
-//        }
     }
 
     private void initMediaRecorder() {
@@ -210,14 +197,13 @@ public class VideoActivity extends Activity {
 
                 @Override
                 public void onCompletion(MediaPlayer mediaPlayer) {
-                    System.out.println("onCompletion");
+//                    System.out.println("onCompletion");
                 }
-
             });
 
             try {
 
-                System.out.println("onPrepared");
+//                System.out.println("onPrepared");
 
                 if (mediaPlayer.isPlaying()) {
                     mediaPlayer.stop();
@@ -225,7 +211,7 @@ public class VideoActivity extends Activity {
                     mediaPlayer = new MediaPlayer();
                 }
 
-//                mediaPlayer.setVolume(0f, 0f);
+                mediaPlayer.setVolume(0f, 0f);
                 mediaPlayer.setLooping(true);
                 mediaPlayer.start();
 
@@ -235,7 +221,6 @@ public class VideoActivity extends Activity {
         }
     };
 
-    @RequiresApi(api = Build.VERSION_CODES.M)
     public void startAudio(File audio) throws IOException {
 
         audioPlaylist.add(audio);
@@ -261,7 +246,6 @@ public class VideoActivity extends Activity {
 //            audioPlaylist = new ArrayList<File>();
     }
 
-    @RequiresApi(api = Build.VERSION_CODES.M)
     private void playNext() {
 
         System.out.println("playNext(): " + audioPlaylist.get(0));

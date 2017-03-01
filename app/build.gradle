@@ -2,12 +2,12 @@ apply plugin: 'com.android.application'
 
 android {
     useLibrary  'org.apache.http.legacy'
-    compileSdkVersion 24
+    compileSdkVersion 25
     buildToolsVersion "23.0.3"
     defaultConfig {
         applicationId "qf.radioandroid"
-        minSdkVersion 22
-        targetSdkVersion 24
+        minSdkVersion 20
+        targetSdkVersion 25
         versionCode 1
         versionName "1.0"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
@@ -30,9 +30,5 @@ dependencies {
 
     compile 'org.nanohttpd:nanohttpd:2.2.0'
 
-    compile ('io.socket:socket.io-client:0.8.3') {
-        // excluding org.json which is provided by Android
-        exclude group: 'org.json', module: 'json'
-    }
     compile 'com.android.support.test.espresso:espresso-core:2.2.2'
 }

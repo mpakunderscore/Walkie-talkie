@@ -6,7 +6,6 @@ import android.os.Build;
 import android.os.Environment;
 import android.provider.MediaStore;
 //import android.support.test.espresso.core.deps.guava.io.Files;
-import android.support.annotation.RequiresApi;
 import android.widget.VideoView;
 
 import org.apache.http.HttpResponse;
@@ -49,7 +48,6 @@ public class Server extends NanoHTTPD {
         this.videoActivity = videoActivity;
     }
 
-    @RequiresApi(api = Build.VERSION_CODES.M)
     @Override
     public Response serve(IHTTPSession session) {
 
@@ -87,6 +85,7 @@ public class Server extends NanoHTTPD {
 
                 String ip = session.getHeaders().get("http-client-ip");
                 videoActivity.serverIP = ip;
+//                videoActivity.initVideoView();
                 System.out.println(ip);
             }
 
