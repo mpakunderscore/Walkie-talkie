@@ -6,6 +6,7 @@ import android.app.Notification;
 import android.app.NotificationManager;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.media.MediaRecorder;
 import android.net.Uri;
@@ -43,6 +44,9 @@ import qf.radioandroid.network.Server;
  */
 
 public class VideoActivity extends Activity {
+
+    Uri staymp4;
+    Uri saymp4;
 
     int uiOptions = View.SYSTEM_UI_FLAG_LAYOUT_STABLE
             | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
@@ -85,6 +89,12 @@ public class VideoActivity extends Activity {
 
         checkPermissions();
 
+        AudioManager audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+        audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, 5, 0);
+
+        staymp4 = Uri.parse("android.resource://" + getPackageName() + "/" + R.raw.stay3gp2);
+        saymp4 = Uri.parse("android.resource://" + getPackageName() + "/" + R.raw.say3gp2);
+
         if (serverIP == null) {
 
             WifiManager wm = (WifiManager) getSystemService(WIFI_SERVICE);
@@ -116,15 +126,13 @@ public class VideoActivity extends Activity {
 
         int storageCheck = ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE);
         if (storageCheck != PackageManager.PERMISSION_GRANTED)
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 1);
+            ActivityCompat.requestPermissions(VideoActivity.this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 1);
     }
 
     public void initVideoView() {
 
-        Uri video = Uri.parse("android.resource://" + getPackageName() + "/" + R.raw.staymp4);
-
         videoView = (VideoView) findViewById(R.id.videoView);
-        videoView.setVideoURI(video);
+        videoView.setVideoURI(staymp4);
         videoView.setOnPreparedListener(preparedListener);
 
         videoView.setOnTouchListener(new View.OnTouchListener() {
@@ -252,7 +260,7 @@ public class VideoActivity extends Activity {
             playNext();
 
             try {
-                videoView.setVideoURI(Uri.parse("android.resource://" + getPackageName() + "/" + R.raw.saymp4));
+                videoView.setVideoURI(saymp4);
             } catch (Exception e) {
             }
         }
@@ -288,7 +296,7 @@ public class VideoActivity extends Activity {
                 else {
 
                     try {
-                        videoView.setVideoURI(Uri.parse("android.resource://" + getPackageName() + "/" + R.raw.staymp4));
+                        videoView.setVideoURI(staymp4);
                     } catch (Exception e) {
                     }
                 }
