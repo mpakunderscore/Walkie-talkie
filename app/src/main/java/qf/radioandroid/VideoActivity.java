@@ -10,16 +10,21 @@ import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.media.MediaRecorder;
 import android.net.Uri;
+import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
+import android.provider.Settings;
+import android.support.annotation.RequiresApi;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
+import android.telephony.TelephonyManager;
 import android.text.format.Formatter;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.Window;
+import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.VideoView;
 
@@ -32,12 +37,16 @@ import android.widget.VideoView;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 
 import qf.radioandroid.network.Client;
 import qf.radioandroid.network.Server;
+import qf.radioandroid.network.Utils;
+
+import android.provider.Settings.Secure;
 
 /**
  * Created by pavelkuzmin on 03/02/2017.
@@ -60,15 +69,17 @@ public class VideoActivity extends Activity {
 
     private MediaRecorder mediaRecorder;
 
-    private MediaPlayer audioPlayer;
+    boolean recording = false;
 
-    public VideoView videoView;
+    private MediaPlayer audioPlayer;
 
     List<File> audioPlaylist = new ArrayList<>();
 
     Timer timer;
 
-    boolean recording = false;
+    public VideoView videoView;
+
+    private TextView recordView;
 
     @Override
     protected void onResume() {
@@ -82,32 +93,33 @@ public class VideoActivity extends Activity {
         System.out.println("onResume");
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
     @Override
     protected void onCreate(Bundle savedInstanceState) {
 
         super.onCreate(savedInstanceState);
 
+//        if (!Utils.checkDevice())
+//            finish();
+
         checkPermissions();
 
+        WifiManager manager = (WifiManager) getSystemService(WIFI_SERVICE);
+        String ip = Formatter.formatIpAddress(manager.getConnectionInfo().getIpAddress());
+        Toast.makeText(getApplicationContext(), ip, Toast.LENGTH_LONG).show();
+
         AudioManager audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
-        audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, 5, 0);
-
-        staymp4 = Uri.parse("android.resource://" + getPackageName() + "/" + R.raw.stay3gp2);
-        saymp4 = Uri.parse("android.resource://" + getPackageName() + "/" + R.raw.say3gp2);
-
-        if (serverIP == null) {
-
-            WifiManager wm = (WifiManager) getSystemService(WIFI_SERVICE);
-            String ip = Formatter.formatIpAddress(wm.getConnectionInfo().getIpAddress());
-
-            Toast.makeText(getApplicationContext(), ip, Toast.LENGTH_LONG).show();
-        }
+        audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, 5, 0); //mic volume
 
         requestWindowFeature(Window.FEATURE_NO_TITLE);
 
         setContentView(R.layout.video);
 
         initVideoView();
+
+        recordView = (TextView) findViewById(R.id.recordView);
+        recordView.setText("transmission in progress".toUpperCase());
+        recordView.setAlpha(0.0f);
 
         Server server = new Server(7000, this);
         try {
@@ -129,7 +141,11 @@ public class VideoActivity extends Activity {
             ActivityCompat.requestPermissions(VideoActivity.this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 1);
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
     public void initVideoView() {
+
+        staymp4 = Uri.parse("android.resource://" + getPackageName() + "/" + R.raw.stay3gp2);
+        saymp4 = Uri.parse("android.resource://" + getPackageName() + "/" + R.raw.say3gp2);
 
         videoView = (VideoView) findViewById(R.id.videoView);
         videoView.setVideoURI(staymp4);
@@ -154,7 +170,7 @@ public class VideoActivity extends Activity {
                             initMediaRecorder();
                             mediaRecorder.start();
 
-                            videoView.setAlpha(0.9f);
+                            showRecording();
                             recording = true;
                         }
 
@@ -181,10 +197,11 @@ public class VideoActivity extends Activity {
 
                                     mediaRecorder.release();
 
-                                    videoView.setAlpha(1.0f);
+                                    showVideo();
                                     recording = false;
                                 }
                             }
+
                         }, 500);
 
                         break;
@@ -196,6 +213,16 @@ public class VideoActivity extends Activity {
                 return true;
             }
         });
+    }
+
+    private void showRecording() {
+//        videoView.setAlpha(0.0f);
+        recordView.setAlpha(0.8f);
+    }
+
+    private void showVideo() {
+//        videoView.setAlpha(1.0f);
+        recordView.setAlpha(0.0f);
     }
 
     private void initMediaRecorder() {
@@ -252,11 +279,6 @@ public class VideoActivity extends Activity {
 
         if (audioPlaylist.size() == 1) {
 
-//            if (audioPlayer == null || !audioPlayer.isPlaying()) {
-//                System.err.println("SAY");
-//                System.err.println("SAY DONE");
-//            }
-
             playNext();
 
             try {
@@ -265,15 +287,12 @@ public class VideoActivity extends Activity {
             }
         }
 
-        System.out.println("audioPlaylist.size(): " + audioPlaylist.size());
-
-//        if (audioPlaylist.size() > 10)
-//            audioPlaylist = new ArrayList<File>();
+//        System.out.println("audioPlaylist.size(): " + audioPlaylist.size());
     }
 
     private void playNext() {
 
-        System.out.println("playNext(): " + audioPlaylist.get(0));
+//        System.out.println("playNext(): " + audioPlaylist.get(0));
 
         timer = new Timer();
 
