@@ -1,9 +1,11 @@
 package qf.radioandroid;
 
+import android.Manifest;
 import android.app.Activity;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.content.Context;
+import android.content.pm.PackageManager;
 import android.media.MediaPlayer;
 import android.media.MediaRecorder;
 import android.net.Uri;
@@ -11,6 +13,8 @@ import android.net.wifi.WifiManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.text.format.Formatter;
 import android.view.MotionEvent;
 import android.view.View;
@@ -79,6 +83,8 @@ public class VideoActivity extends Activity {
 
         super.onCreate(savedInstanceState);
 
+        checkPermissions();
+
         if (serverIP == null) {
 
             WifiManager wm = (WifiManager) getSystemService(WIFI_SERVICE);
@@ -100,6 +106,17 @@ public class VideoActivity extends Activity {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    private void checkPermissions() {
+
+        int recordCheck = ContextCompat.checkSelfPermission(VideoActivity.this, Manifest.permission.RECORD_AUDIO);
+        if (recordCheck != PackageManager.PERMISSION_GRANTED)
+            ActivityCompat.requestPermissions(VideoActivity.this, new String[]{Manifest.permission.RECORD_AUDIO}, 1);
+
+        int storageCheck = ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE);
+        if (storageCheck != PackageManager.PERMISSION_GRANTED)
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 1);
     }
 
     public void initVideoView() {

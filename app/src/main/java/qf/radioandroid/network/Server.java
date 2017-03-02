@@ -56,6 +56,7 @@ public class Server extends NanoHTTPD {
         try {
 
             System.out.println(session.getMethod());
+            String ip = session.getHeaders().get("http-client-ip");
 
             if (session.getMethod().toString().equals("POST")) {
 
@@ -71,8 +72,11 @@ public class Server extends NanoHTTPD {
 
                     System.out.println("tempFile.length(): " + tempFile.length());
 
-                    File audio = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).getAbsolutePath()
-                            + "/" + System.currentTimeMillis());
+                    File audio = new File(
+                            Environment.getExternalStoragePublicDirectory(
+                            Environment.DIRECTORY_DOWNLOADS).getAbsolutePath()
+                            + "/" + System.currentTimeMillis()
+                    );
 
                     copy(tempFile, audio);
 
@@ -83,7 +87,6 @@ public class Server extends NanoHTTPD {
 
             } else {
 
-                String ip = session.getHeaders().get("http-client-ip");
                 videoActivity.serverIP = ip;
 //                videoActivity.initVideoView();
                 System.out.println(ip);
