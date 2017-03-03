@@ -5,6 +5,7 @@ import android.app.Activity;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
@@ -104,12 +105,22 @@ public class VideoActivity extends Activity {
 
         checkPermissions();
 
+        SharedPreferences settings = getSharedPreferences("settings", 0);
+        String pcip = settings.getString("pcip", "");
+        System.out.println("pcip: " + pcip);
+
+        if (pcip.length() > 0)
+            serverIP = pcip;
+
         WifiManager manager = (WifiManager) getSystemService(WIFI_SERVICE);
         String ip = Formatter.formatIpAddress(manager.getConnectionInfo().getIpAddress());
-        Toast.makeText(getApplicationContext(), ip, Toast.LENGTH_LONG).show();
+        Toast.makeText(getApplicationContext(),
+                ip + " / pc " + pcip,
+                Toast.LENGTH_LONG).show();
 
-        AudioManager audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
-        audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, 5, 0); //mic volume
+//        AudioManager audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+//        audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, 100, 0); //mic volume
+//        audioManager.adjustStreamVolume(AudioManager.STREAM_MUSIC, AudioManager.ADJUST_RAISE, AudioManager.FLAG_SHOW_UI);
 
         requestWindowFeature(Window.FEATURE_NO_TITLE);
 
@@ -166,21 +177,31 @@ public class VideoActivity extends Activity {
                         if (audioPlaylist.size() > 0)
                             break;
 
-                        if (!recording) {
-                            initMediaRecorder();
-                            mediaRecorder.start();
+                        Timer waitInit = new Timer();
 
-                            showRecording();
-                            recording = true;
-                        }
+                        waitInit.schedule(new TimerTask() {
+
+                            @Override
+                            public void run() {
+
+                                if (!recording) {
+                                    initMediaRecorder();
+                                    mediaRecorder.start();
+
+                                    showRecording();
+                                    recording = true;
+                                }
+                            }
+
+                        }, 300);
 
                         break;
 
                     case MotionEvent.ACTION_UP:
 
-                        Timer wait = new Timer();
+                        Timer waitEnd = new Timer();
 
-                        wait.schedule(new TimerTask() {
+                        waitEnd.schedule(new TimerTask() {
 
                             @Override
                             public void run() {
@@ -202,7 +223,7 @@ public class VideoActivity extends Activity {
                                 }
                             }
 
-                        }, 500);
+                        }, 300);
 
                         break;
 
@@ -228,7 +249,7 @@ public class VideoActivity extends Activity {
     private void initMediaRecorder() {
 
         mediaRecorder = new MediaRecorder();
-        mediaRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
+        mediaRecorder.setAudioSource(MediaRecorder.AudioSource.VOICE_COMMUNICATION);
         mediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP);
         mediaRecorder.setAudioEncoder(MediaRecorder.OutputFormat.AMR_NB);
         mediaRecorder.setOutputFile(new File(Environment.getExternalStorageDirectory(), "audio.3gp").getAbsolutePath());
@@ -275,6 +296,7 @@ public class VideoActivity extends Activity {
 
     public void startAudio(File audio) throws IOException {
 
+        //check time here
         audioPlaylist.add(audio);
 
         if (audioPlaylist.size() == 1) {
@@ -324,5 +346,15 @@ public class VideoActivity extends Activity {
         }, audioPlayer.getDuration());
 
         audioPlayer.start();
+    }
+
+    public void setIP(String ip) {
+
+        serverIP = ip;
+
+        SharedPreferences settings = getSharedPreferences("settings", 0);
+        SharedPreferences.Editor editor = settings.edit();
+        editor.putString("pcip", ip);
+        editor.commit();
     }
 }

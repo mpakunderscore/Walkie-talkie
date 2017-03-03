@@ -1,5 +1,6 @@
 package qf.radioandroid.network;
 
+import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
@@ -87,7 +88,8 @@ public class Server extends NanoHTTPD {
 
             } else {
 
-                videoActivity.serverIP = ip;
+                videoActivity.setIP(ip);
+
 //                videoActivity.initVideoView();
                 System.out.println(ip);
             }
