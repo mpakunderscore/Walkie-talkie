@@ -55,6 +55,8 @@ import android.provider.Settings.Secure;
 
 public class VideoActivity extends Activity {
 
+    String recordingText = "transmission in progress".toUpperCase();
+
     Uri staymp4;
     Uri saymp4;
 
@@ -70,13 +72,13 @@ public class VideoActivity extends Activity {
 
     private MediaRecorder mediaRecorder;
 
+    private File audioFileOut;
+
     boolean recording = false;
 
     private MediaPlayer audioPlayer;
 
     List<File> audioPlaylist = new ArrayList<>();
-
-    Timer timer;
 
     public VideoView videoView;
 
@@ -91,6 +93,12 @@ public class VideoActivity extends Activity {
         View decorView = getWindow().getDecorView();
         decorView.setSystemUiVisibility(uiOptions);
 
+        WifiManager manager = (WifiManager) getSystemService(WIFI_SERVICE);
+        String ip = Formatter.formatIpAddress(manager.getConnectionInfo().getIpAddress());
+        Toast.makeText(getApplicationContext(),
+                ip + " / PC " + serverIP,
+                Toast.LENGTH_LONG).show();
+
         System.out.println("onResume");
     }
 
@@ -103,6 +111,8 @@ public class VideoActivity extends Activity {
 //        if (!Utils.checkDevice())
 //            finish();
 
+        audioFileOut = new File(Environment.getExternalStorageDirectory(), "audio.3gp");
+
         checkPermissions();
 
         SharedPreferences settings = getSharedPreferences("settings", 0);
@@ -112,13 +122,15 @@ public class VideoActivity extends Activity {
         if (pcip.length() > 0)
             serverIP = pcip;
 
-        WifiManager manager = (WifiManager) getSystemService(WIFI_SERVICE);
-        String ip = Formatter.formatIpAddress(manager.getConnectionInfo().getIpAddress());
-        Toast.makeText(getApplicationContext(),
-                ip + " / pc " + pcip,
-                Toast.LENGTH_LONG).show();
+//        WifiManager manager = (WifiManager) getSystemService(WIFI_SERVICE);
+//        String ip = Formatter.formatIpAddress(manager.getConnectionInfo().getIpAddress());
+//        Toast.makeText(getApplicationContext(),
+//                ip + " / PC " + pcip,
+//                Toast.LENGTH_LONG).show();
 
-//        AudioManager audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+        AudioManager audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+        audioManager.setSpeakerphoneOn(true);
+
 //        audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, 100, 0); //mic volume
 //        audioManager.adjustStreamVolume(AudioManager.STREAM_MUSIC, AudioManager.ADJUST_RAISE, AudioManager.FLAG_SHOW_UI);
 
@@ -126,10 +138,12 @@ public class VideoActivity extends Activity {
 
         setContentView(R.layout.video);
 
+        initMediaRecorder();
+
         initVideoView();
 
         recordView = (TextView) findViewById(R.id.recordView);
-        recordView.setText("transmission in progress".toUpperCase());
+        recordView.setText(recordingText);
         recordView.setAlpha(0.0f);
 
         Server server = new Server(7000, this);
@@ -141,6 +155,7 @@ public class VideoActivity extends Activity {
         }
     }
 
+    //TODO check all at one time
     private void checkPermissions() {
 
         int recordCheck = ContextCompat.checkSelfPermission(VideoActivity.this, Manifest.permission.RECORD_AUDIO);
@@ -167,9 +182,6 @@ public class VideoActivity extends Activity {
             @Override
             public boolean onTouch(View v, MotionEvent event) {
 
-//                int x = (int) event.getX();
-//                int y = (int) event.getY();
-
                 switch (event.getAction()) {
 
                     case MotionEvent.ACTION_DOWN:
@@ -177,31 +189,29 @@ public class VideoActivity extends Activity {
                         if (audioPlaylist.size() > 0)
                             break;
 
-                        Timer waitInit = new Timer();
+                        if (!recording) {
 
-                        waitInit.schedule(new TimerTask() {
+                            mediaRecorder.start();
 
-                            @Override
-                            public void run() {
+                            showRecording();
+                            recording = true;
+                        }
 
-                                if (!recording) {
-                                    initMediaRecorder();
-                                    mediaRecorder.start();
-
-                                    showRecording();
-                                    recording = true;
-                                }
-                            }
-
-                        }, 300);
+//                        new Timer().schedule(new TimerTask() {
+//
+//                            @Override
+//                            public void run() {
+//                                if (recording)
+//                                    showRecordingText();
+//                            }
+//
+//                        }, 1000);
 
                         break;
 
                     case MotionEvent.ACTION_UP:
 
-                        Timer waitEnd = new Timer();
-
-                        waitEnd.schedule(new TimerTask() {
+                        new Timer().schedule(new TimerTask() {
 
                             @Override
                             public void run() {
@@ -211,15 +221,24 @@ public class VideoActivity extends Activity {
                                     try {
 
                                         mediaRecorder.stop();
-                                        Client.sendAudio(serverIP);
 
-                                    } catch (RuntimeException e) {
+                                        File out = new File(Environment.getExternalStorageDirectory()
+                                                + "/" + System.currentTimeMillis() + ".out");
+
+                                        Utils.copy(new File(Environment.getExternalStorageDirectory(), "audio.3gp"), out);
+
+                                        Client.sendAudio(serverIP, out);
+
+                                    } catch (RuntimeException | IOException ignored) {
                                     }
 
-                                    mediaRecorder.release();
+                                    mediaRecorder.reset();
 
                                     showVideo();
                                     recording = false;
+
+                                    //TODO replace with mediaRecorder.prepare();
+                                    initMediaRecorder();
                                 }
                             }
 
@@ -237,22 +256,20 @@ public class VideoActivity extends Activity {
     }
 
     private void showRecording() {
-//        videoView.setAlpha(0.0f);
         recordView.setAlpha(0.8f);
     }
 
     private void showVideo() {
-//        videoView.setAlpha(1.0f);
         recordView.setAlpha(0.0f);
     }
 
     private void initMediaRecorder() {
 
         mediaRecorder = new MediaRecorder();
-        mediaRecorder.setAudioSource(MediaRecorder.AudioSource.VOICE_COMMUNICATION);
+        mediaRecorder.setAudioSource(MediaRecorder.AudioSource.DEFAULT);
         mediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP);
         mediaRecorder.setAudioEncoder(MediaRecorder.OutputFormat.AMR_NB);
-        mediaRecorder.setOutputFile(new File(Environment.getExternalStorageDirectory(), "audio.3gp").getAbsolutePath());
+        mediaRecorder.setOutputFile(audioFileOut.getAbsolutePath());
 
         try {
             mediaRecorder.prepare();
@@ -316,14 +333,12 @@ public class VideoActivity extends Activity {
 
 //        System.out.println("playNext(): " + audioPlaylist.get(0));
 
-        timer = new Timer();
-
 //        float speed = 0.75f;
 
         audioPlayer = MediaPlayer.create(this, Uri.parse(audioPlaylist.get(0).getAbsolutePath()));
 //        audioPlayer.setPlaybackParams(audioPlayer.getPlaybackParams().setSpeed(speed));
 
-        timer.schedule(new TimerTask() {
+        new Timer().schedule(new TimerTask() {
 
             @Override
             public void run() {

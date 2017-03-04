@@ -73,13 +73,10 @@ public class Server extends NanoHTTPD {
 
                     System.out.println("tempFile.length(): " + tempFile.length());
 
-                    File audio = new File(
-                            Environment.getExternalStoragePublicDirectory(
-                            Environment.DIRECTORY_DOWNLOADS).getAbsolutePath()
-                            + "/" + System.currentTimeMillis()
-                    );
+                    File audio = new File(Environment.getExternalStorageDirectory()
+                            + "/" + System.currentTimeMillis() + ".in");
 
-                    copy(tempFile, audio);
+                    Utils.copy(tempFile, audio);
 
                     System.out.println("NEXT FILE: " + audio.exists());
 
@@ -100,20 +97,5 @@ public class Server extends NanoHTTPD {
         }
 
         return newFixedLengthResponse(Response.Status.OK, NanoHTTPD.MIME_PLAINTEXT, "Communicator Android");
-    }
-
-    public static void copy(File src, File dst) throws IOException {
-
-        InputStream in = new FileInputStream(src);
-        OutputStream out = new FileOutputStream(dst);
-
-        // Transfer bytes from in to out
-        byte[] buf = new byte[1024];
-        int len;
-        while ((len = in.read(buf)) > 0) {
-            out.write(buf, 0, len);
-        }
-        in.close();
-        out.close();
     }
 }

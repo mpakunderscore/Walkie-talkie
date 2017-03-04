@@ -31,29 +31,27 @@ public class Client extends AsyncTask<String, Void, String> {
 
     static String serverUrl;
 
-    public static void sendAudio(String ip) {
+    public static void sendAudio(String ip, File out) {
 
         serverUrl = "http://" + ip + ":7000/audio";
 
         System.out.println(new File(Environment.getExternalStorageDirectory(), audioFile).length());
 
-        new Client().execute(serverUrl);
+        new Client().execute(serverUrl, out.getAbsolutePath());
     }
 
     @Override
     protected String doInBackground(String... urls) {
 
-        sendFile(urls[0]);
+        sendFile(urls[0], urls[1]);
         return "";
     }
 
-    private static void sendFile(String url) {
+    private static void sendFile(String url, String filePath) {
 
         System.out.println("sendFile");
 
         long time = System.currentTimeMillis();
-
-        String filePath = Environment.getExternalStorageDirectory() + "/" + audioFile;
 
         try {
             send(url, filePath);
@@ -150,5 +148,7 @@ public class Client extends AsyncTask<String, Void, String> {
         fileInputStream.close();
         dataOutputStream.flush();
         dataOutputStream.close();
+
+        selectedFile.delete();
     }
 }
