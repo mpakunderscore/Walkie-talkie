@@ -86,8 +86,6 @@ public class Server extends NanoHTTPD {
             } else {
 
                 videoActivity.setIP(ip);
-
-//                videoActivity.initVideoView();
                 System.out.println(ip);
             }
 

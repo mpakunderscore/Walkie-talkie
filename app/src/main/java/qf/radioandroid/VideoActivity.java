@@ -36,7 +36,10 @@ import android.widget.VideoView;
 //import org.apache.http.impl.client.DefaultHttpClient;
 
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -69,6 +72,8 @@ public class VideoActivity extends Activity {
             | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY;
 
     public String serverIP;
+
+    Recorder recorder;
 
     private MediaRecorder mediaRecorder;
 
@@ -138,6 +143,8 @@ public class VideoActivity extends Activity {
 
         setContentView(R.layout.video);
 
+//        initAudioRecorder();
+
         initMediaRecorder();
 
         initVideoView();
@@ -191,6 +198,12 @@ public class VideoActivity extends Activity {
 
                         if (!recording) {
 
+
+                            //TODO replace with mediaRecorder.prepare();
+                            initMediaRecorder();
+
+//                            recorder.audioRecord.startRecording();
+
                             mediaRecorder.start();
 
                             showRecording();
@@ -220,6 +233,17 @@ public class VideoActivity extends Activity {
 
                                     try {
 
+//                                        File out = new File(Environment.getExternalStorageDirectory() + "/" + System.currentTimeMillis() + ".out");
+//                                        byte[] buffer = new byte[recorder.minBufferSize * 2];
+//                                        int bytesWritten = recorder.audioRecord.read(buffer, 0, buffer.length);
+//                                        OutputStream outputStream = new FileOutputStream(Environment.getExternalStorageDirectory() + "/" + System.currentTimeMillis() + ".out");
+//                                        outputStream.write(buffer, 0, bytesWritten);
+//
+//                                        recorder.audioRecord.stop();
+//                                        recorder.audioRecord.release();
+
+//                                        File out = new File(Environment.getExternalStorageDirectory() + "/audio");
+
                                         mediaRecorder.stop();
 
                                         File out = new File(Environment.getExternalStorageDirectory()
@@ -236,9 +260,6 @@ public class VideoActivity extends Activity {
 
                                     showVideo();
                                     recording = false;
-
-                                    //TODO replace with mediaRecorder.prepare();
-                                    initMediaRecorder();
                                 }
                             }
 
@@ -263,6 +284,10 @@ public class VideoActivity extends Activity {
         recordView.setAlpha(0.0f);
     }
 
+    private void initAudioRecorder() {
+        recorder = new Recorder();
+    }
+
     private void initMediaRecorder() {
 
         mediaRecorder = new MediaRecorder();
@@ -270,6 +295,10 @@ public class VideoActivity extends Activity {
         mediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP);
         mediaRecorder.setAudioEncoder(MediaRecorder.OutputFormat.AMR_NB);
         mediaRecorder.setOutputFile(audioFileOut.getAbsolutePath());
+
+//        mediaRecorder.setAudioEncoder(MediaRecorder.getAudioSourceMax());
+//        mediaRecorder.setAudioEncodingBitRate(16);
+//        mediaRecorder.setAudioSamplingRate(44100);
 
         try {
             mediaRecorder.prepare();
