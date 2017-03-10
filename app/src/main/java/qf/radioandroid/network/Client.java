@@ -27,17 +27,13 @@ import java.net.URL;
 
 public class Client extends AsyncTask<String, Void, String> {
 
-    static String audioFile = "audio.3gp";
+    public static void sendAudio(String ip, String out) {
 
-    static String serverUrl;
+        String serverUrl = "http://" + ip + ":7000/audio";
 
-    public static void sendAudio(String ip, File out) {
+//        System.out.println(new File(Environment.getExternalStorageDirectory(), audioFile).length());
 
-        serverUrl = "http://" + ip + ":7000/audio";
-
-        System.out.println(new File(Environment.getExternalStorageDirectory(), audioFile).length());
-
-        new Client().execute(serverUrl, out.getAbsolutePath());
+        new Client().execute(serverUrl, out);
     }
 
     @Override
@@ -55,8 +51,7 @@ public class Client extends AsyncTask<String, Void, String> {
 
         try {
             send(url, filePath);
-        } catch (IOException e) {
-//            e.printStackTrace();
+        } catch (IOException ignored) {
         }
 
         System.out.println("sendFile time: " + (System.currentTimeMillis() - time) / 1000);
@@ -78,13 +73,10 @@ public class Client extends AsyncTask<String, Void, String> {
         int maxBufferSize = 1 * 1024 * 1024;
         File selectedFile = new File(selectedFilePath);
 
-
         if (!selectedFile.isFile()) {
-
             System.out.println("NOT A FILE: " + selectedFilePath);
             return;
         }
-
 
         String[] parts = selectedFilePath.split("/");
         final String fileName = parts[parts.length - 1];

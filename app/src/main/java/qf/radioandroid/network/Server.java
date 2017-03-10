@@ -27,6 +27,7 @@ import java.net.URL;
 import java.nio.channels.FileChannel;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 import fi.iki.elonen.NanoHTTPD;
@@ -71,26 +72,23 @@ public class Server extends NanoHTTPD {
 
                     File tempFile = new File(location);
 
-                    System.out.println("tempFile.length(): " + tempFile.length());
-
-                    File audio = new File(Environment.getExternalStorageDirectory()
-                            + "/" + System.currentTimeMillis() + ".in");
+                    File audio = File.createTempFile(String.valueOf(System.currentTimeMillis()), ".in");
 
                     Utils.copy(tempFile, audio);
 
-                    System.out.println("NEXT FILE: " + audio.exists());
+                    System.out.println("next file: " + audio.exists());
 
                     videoActivity.startAudio(audio);
                 }
+            }
 
-            } else {
-
+            if (!Objects.equals(videoActivity.serverIP, ip)) {
                 videoActivity.setIP(ip);
-                System.out.println(ip);
+                System.out.println("new ip: " + ip);
             }
 
         } catch (IOException | ResponseException e) {
-            e.printStackTrace();
+
             return newFixedLengthResponse(Response.Status.OK, NanoHTTPD.MIME_PLAINTEXT, "Error");
         }
 

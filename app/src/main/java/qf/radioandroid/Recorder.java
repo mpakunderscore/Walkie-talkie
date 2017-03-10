@@ -12,6 +12,7 @@ import java.io.OutputStream;
  * Created by pavelkuzmin on 04/03/2017.
  */
 
+@Deprecated
 public class Recorder {
 
     public final int minBufferSize;

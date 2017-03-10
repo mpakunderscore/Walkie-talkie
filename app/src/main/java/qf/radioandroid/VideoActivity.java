@@ -2,8 +2,6 @@ package qf.radioandroid;
 
 import android.Manifest;
 import android.app.Activity;
-import android.app.Notification;
-import android.app.NotificationManager;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
@@ -11,16 +9,12 @@ import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.media.MediaRecorder;
 import android.net.Uri;
-import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Environment;
-import android.provider.Settings;
 import android.support.annotation.RequiresApi;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
-import android.telephony.TelephonyManager;
 import android.text.format.Formatter;
 import android.view.MotionEvent;
 import android.view.View;
@@ -29,28 +23,16 @@ import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.VideoView;
 
-//import org.apache.http.HttpResponse;
-//import org.apache.http.client.HttpClient;
-//import org.apache.http.client.methods.HttpPost;
-//import org.apache.http.entity.InputStreamEntity;
-//import org.apache.http.impl.client.DefaultHttpClient;
 
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 
 import qf.radioandroid.network.Client;
 import qf.radioandroid.network.Server;
-import qf.radioandroid.network.Utils;
-
-import android.provider.Settings.Secure;
 
 /**
  * Created by pavelkuzmin on 03/02/2017.
@@ -73,11 +55,9 @@ public class VideoActivity extends Activity {
 
     public String serverIP;
 
-    Recorder recorder;
-
     private MediaRecorder mediaRecorder;
 
-    private File audioFileOut;
+    private String audioFileOut;
 
     boolean recording = false;
 
@@ -116,36 +96,16 @@ public class VideoActivity extends Activity {
 //        if (!Utils.checkDevice())
 //            finish();
 
-        audioFileOut = new File(Environment.getExternalStorageDirectory(), "audio.3gp");
-
         checkPermissions();
 
-        SharedPreferences settings = getSharedPreferences("settings", 0);
-        String pcip = settings.getString("pcip", "");
-        System.out.println("pcip: " + pcip);
-
-        if (pcip.length() > 0)
-            serverIP = pcip;
-
-//        WifiManager manager = (WifiManager) getSystemService(WIFI_SERVICE);
-//        String ip = Formatter.formatIpAddress(manager.getConnectionInfo().getIpAddress());
-//        Toast.makeText(getApplicationContext(),
-//                ip + " / PC " + pcip,
-//                Toast.LENGTH_LONG).show();
+        checkPCIP();
 
         AudioManager audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
         audioManager.setSpeakerphoneOn(true);
 
-//        audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, 100, 0); //mic volume
-//        audioManager.adjustStreamVolume(AudioManager.STREAM_MUSIC, AudioManager.ADJUST_RAISE, AudioManager.FLAG_SHOW_UI);
-
         requestWindowFeature(Window.FEATURE_NO_TITLE);
 
         setContentView(R.layout.video);
-
-//        initAudioRecorder();
-
-        initMediaRecorder();
 
         initVideoView();
 
@@ -162,7 +122,16 @@ public class VideoActivity extends Activity {
         }
     }
 
-    //TODO check all at one time
+    private void checkPCIP() {
+
+        SharedPreferences settings = getSharedPreferences("settings", 0);
+        String pcip = settings.getString("pcip", "");
+        System.out.println("pcip: " + pcip);
+
+        if (pcip.length() > 0)
+            serverIP = pcip;
+    }
+
     private void checkPermissions() {
 
         int recordCheck = ContextCompat.checkSelfPermission(VideoActivity.this, Manifest.permission.RECORD_AUDIO);
@@ -198,69 +167,48 @@ public class VideoActivity extends Activity {
 
                         if (!recording) {
 
+                            try {
+                                initMediaRecorder();
+                            } catch (Exception e) {
+                                break;
+                            }
 
-                            //TODO replace with mediaRecorder.prepare();
-                            initMediaRecorder();
-
-//                            recorder.audioRecord.startRecording();
+                            recording = true;
 
                             mediaRecorder.start();
 
                             showRecording();
-                            recording = true;
                         }
-
-//                        new Timer().schedule(new TimerTask() {
-//
-//                            @Override
-//                            public void run() {
-//                                if (recording)
-//                                    showRecordingText();
-//                            }
-//
-//                        }, 1000);
 
                         break;
 
                     case MotionEvent.ACTION_UP:
+
 
                         new Timer().schedule(new TimerTask() {
 
                             @Override
                             public void run() {
 
-                                if (recording) {
+                                if (!recording)
+                                    return;
 
-                                    try {
+                                try {
 
-//                                        File out = new File(Environment.getExternalStorageDirectory() + "/" + System.currentTimeMillis() + ".out");
-//                                        byte[] buffer = new byte[recorder.minBufferSize * 2];
-//                                        int bytesWritten = recorder.audioRecord.read(buffer, 0, buffer.length);
-//                                        OutputStream outputStream = new FileOutputStream(Environment.getExternalStorageDirectory() + "/" + System.currentTimeMillis() + ".out");
-//                                        outputStream.write(buffer, 0, bytesWritten);
-//
-//                                        recorder.audioRecord.stop();
-//                                        recorder.audioRecord.release();
+                                    mediaRecorder.stop();
 
-//                                        File out = new File(Environment.getExternalStorageDirectory() + "/audio");
+                                    Client.sendAudio(serverIP, audioFileOut);
 
-                                        mediaRecorder.stop();
-
-                                        File out = new File(Environment.getExternalStorageDirectory()
-                                                + "/" + System.currentTimeMillis() + ".out");
-
-                                        Utils.copy(new File(Environment.getExternalStorageDirectory(), "audio.3gp"), out);
-
-                                        Client.sendAudio(serverIP, out);
-
-                                    } catch (RuntimeException | IOException ignored) {
-                                    }
-
-                                    mediaRecorder.reset();
-
-                                    showVideo();
-                                    recording = false;
+                                } catch (Exception ignored) {
                                 }
+
+                                mediaRecorder.reset();
+
+                                showVideo();
+
+                                audioFileOut = "";
+
+                                recording = false;
                             }
 
                         }, 300);
@@ -284,30 +232,21 @@ public class VideoActivity extends Activity {
         recordView.setAlpha(0.0f);
     }
 
-    private void initAudioRecorder() {
-        recorder = new Recorder();
-    }
+    private void initMediaRecorder() throws IOException {
 
-    private void initMediaRecorder() {
+        File out = File.createTempFile(String.valueOf(System.currentTimeMillis()), ".out");
+        audioFileOut = out.getAbsolutePath();
 
         mediaRecorder = new MediaRecorder();
         mediaRecorder.setAudioSource(MediaRecorder.AudioSource.DEFAULT);
         mediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP);
         mediaRecorder.setAudioEncoder(MediaRecorder.OutputFormat.AMR_NB);
-        mediaRecorder.setOutputFile(audioFileOut.getAbsolutePath());
+        mediaRecorder.setOutputFile(audioFileOut);
 
-//        mediaRecorder.setAudioEncoder(MediaRecorder.getAudioSourceMax());
-//        mediaRecorder.setAudioEncodingBitRate(16);
-//        mediaRecorder.setAudioSamplingRate(44100);
-
-        try {
-            mediaRecorder.prepare();
-        } catch (IOException e) {
-//            e.printStackTrace();
-        }
+        mediaRecorder.prepare();
     }
 
-    MediaPlayer.OnPreparedListener preparedListener = new MediaPlayer.OnPreparedListener(){
+    MediaPlayer.OnPreparedListener preparedListener = new MediaPlayer.OnPreparedListener() {
 
         @Override
         public void onPrepared(MediaPlayer mediaPlayer) {
@@ -321,8 +260,6 @@ public class VideoActivity extends Activity {
             });
 
             try {
-
-//                System.out.println("onPrepared");
 
                 if (mediaPlayer.isPlaying()) {
                     mediaPlayer.stop();
@@ -342,7 +279,7 @@ public class VideoActivity extends Activity {
 
     public void startAudio(File audio) throws IOException {
 
-        //check time here
+        //TODO check order here
         audioPlaylist.add(audio);
 
         if (audioPlaylist.size() == 1) {
@@ -351,21 +288,14 @@ public class VideoActivity extends Activity {
 
             try {
                 videoView.setVideoURI(saymp4);
-            } catch (Exception e) {
+            } catch (Exception ignored) {
             }
         }
-
-//        System.out.println("audioPlaylist.size(): " + audioPlaylist.size());
     }
 
     private void playNext() {
 
-//        System.out.println("playNext(): " + audioPlaylist.get(0));
-
-//        float speed = 0.75f;
-
         audioPlayer = MediaPlayer.create(this, Uri.parse(audioPlaylist.get(0).getAbsolutePath()));
-//        audioPlayer.setPlaybackParams(audioPlayer.getPlaybackParams().setSpeed(speed));
 
         new Timer().schedule(new TimerTask() {
 
@@ -382,7 +312,7 @@ public class VideoActivity extends Activity {
 
                     try {
                         videoView.setVideoURI(staymp4);
-                    } catch (Exception e) {
+                    } catch (Exception ignored) {
                     }
                 }
             }
